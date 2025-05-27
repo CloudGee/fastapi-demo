@@ -24,7 +24,8 @@
                 "ms-python.vscode-pylance",
                 "DaltonMenezes.aura-theme",
                 "equinusocio.vsc-material-theme-icons",
-                "GitHub.copilot"
+                "GitHub.copilot",
+                "alexcvzz.vscode-sqlite"
             ]
         }
     }
