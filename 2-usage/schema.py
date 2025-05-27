@@ -15,8 +15,33 @@ class BookInput(BaseModel):
     publish: str
     price: float
 
+    # 为api doc中每个api接口添加有意义的示例描述
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Python",
+                "isbn": "978-7-121-30000-0",
+                "type_": "programming",
+                "publish": "2023-01-01",
+                "price": 99.99
+            }
+        }
+
 class BookOutput(BookInput):
     id_: int
+
+    # 为api doc中每个api接口添加有意义的示例描述
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id_": 1,
+                "name": "Python",
+                "isbn": "978-7-121-30000-0",
+                "type_": "programming",
+                "publish": "2023-01-01",
+                "price": 99.99
+            }
+        }
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ app = FastAPI(title="Book API", description="Book API", version="1.0.0")
 books = loadBook()
 
 @app.get("/")
-def load_all_books():
+def load_all_books() -> list[BookOutput]:
     """
     获取所有书籍
     """
@@ -17,7 +17,7 @@ def load_all_books():
     return books
 
 @app.get("/search")
-def get_book(book_id: int|None = None, book_type: str|None = None) -> list:
+def get_book(book_id: int|None = None, book_type: str|None = None) -> list[BookOutput]:
     allBook = books
     if book_id is not None:
         allBook = [book for book in allBook if book.id_ == book_id]
@@ -38,7 +38,7 @@ def get_book_by_id(book_id: int) -> BookOutput:
 
 
 @app.post("/append")
-def append_book(book: BookInput):
+def append_book(book: BookInput) -> BookOutput:
     """
     添加书籍
     """
@@ -75,7 +75,7 @@ def delete_book(book_id: int):
     raise HTTPException(status_code=404, detail="Book not found")
 
 @app.put("/update/{book_id}")
-def update_book(book_id: int, book: BookInput):
+def update_book(book_id: int, book: BookInput) -> BookOutput:
     """
     更新书籍
     """
