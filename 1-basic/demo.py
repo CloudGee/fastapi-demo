@@ -230,19 +230,19 @@ def get_product(
 # ------------ 运行说明 ------------
 """
 1. 基本运行命令（默认端口8000）：
-   uvicorn main:app --reload
+   uvicorn pyFileName:app --reload
 
 2. 指定端口运行（例如9000端口）：
-   uvicorn main:app --reload --port 9000
+   uvicorn pyFileName:app --reload --port 9000
 
 3. 指定主机IP（允许外部访问）：
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   uvicorn pyFileName:app --reload --host 0.0.0.0 --port 8000
 
 4. 生产环境运行（关闭重载）：
-   uvicorn main:app --workers 4
+   uvicorn pyFileName:app --workers 4
 
 5. 参数说明：
-   - main:app：main是Python文件名，app是FastAPI实例变量名
+   - pyFileName:app：pyFileName是Python文件名，app是FastAPI实例变量名
    - --reload：开发模式，代码修改自动重载
    - --port：指定运行端口，默认8000
    - --host：指定监听主机，默认127.0.0.1（仅本地访问）
