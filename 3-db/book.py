@@ -1,7 +1,5 @@
-from fastapi import FastAPI
-from fastapi import HTTPException
-
-from sqlmodel import create_engine, SQLModel
+from fastapi import FastAPI, HTTPException, Depends
+from sqlmodel import create_engine, SQLModel, Session, select
 from schema import BookInput, BookOutput, Book
 
 
@@ -24,91 +22,86 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Book API", description="Book API", version="1.0.0", lifespan=lifespan)
 
-@app.get("/")
-def load_all_books() -> list[BookOutput]:
+def get_db_session() -> Session:
     """
-    获取所有书籍
+    获取数据库会话
     """
-    print(books)
-    return books
-
-@app.get("/search")
-def get_book(book_id: int|None = None, book_type: str|None = None) -> list[BookOutput]:
-    allBook = books
-    if book_id is not None:
-        allBook = [book for book in allBook if book.id_ == book_id]
-    if book_type is not None:
-        allBook = [book for book in allBook if book.type_ == book_type]
-    return allBook
-
-@app.get("/search/{book_id}")
-def get_book_by_id(book_id: int) -> BookOutput:
-    """
-    根据ID获取书籍
-    """
-    for book in books:
-        if book.id_ == book_id:
-            return book
-    raise HTTPException(status_code=404, detail="Book not found")
-
-
+    with Session(engine) as session:
+        yield session
+        # 它会返回一个生成器函数，使用with语句可以自动管理数据库连接的打开和关闭
+        # 这里的yield语句会在with语句结束时自动关闭数据库连接
+        # 这样可以避免手动关闭数据库连接的麻烦
+        # yield 是用于“中途返回资源，事后清理资源”的。适合用于数据库连接、文件句柄、网络连接等上下文管理。
+        # 这种方式，联合fastAPI的Depends依赖注入，可以在每个请求中自动获取数据库会话。称之为Session Injection。
 
 @app.post("/append")
-def append_book(book: BookInput) -> BookOutput:
+def append_book(book: BookInput, session: Session = Depends(get_db_session)) -> Book:
     """
     添加书籍
     """
-    bookWithID = BookOutput(
-        id_=len(books) + 1,
-        name=book.name,
-        isbn=book.isbn,
-        type_=book.type_,
-        publish=book.publish,
-        price=book.price
-    )
-    books.append(bookWithID)
-    try:
-        saveBook(books)
-        return bookWithID
-    except Exception as e:
-        print(f"Error saving book: {e}")
-        raise HTTPException(status_code=500, detail="Error saving book")
+    # Session 在数据库中一般称之为事务（Transaction），
+    # 事务是一个操作的集合，这些操作要么全部成功，要么全部失败。如果有一个失败，之前的操作都会自动回滚。
+    # 在这里，我们使用 Session 来管理数据库连接和操作。
+    new_book = Book.model_validate(BookInput)  # 将输入的BookInput转换为Book对象
+    session.add(new_book)
+    session.commit()  # 提交事务
+    session.refresh(new_book) # 刷新new_book对象，获取最新的ID等信息
+    return new_book
+
+@app.get("/")
+def load_all_books(session: Session = Depends(get_db_session)) -> list[Book]:
+    """
+    获取所有书籍
+    """
+    query = select(Book)
+    result = session.exec(query).all()
+    if not result:
+        raise HTTPException(status_code=404, detail="No books found")
+    return result
+
+@app.get("/search")
+def get_book(book_id: int | None = None, book_type: str | None = None, session: Session = Depends(get_db_session)) -> list[Book]:
+    filters = []
+    if book_id is not None:
+        filters.append(Book.id_ == book_id)
+    if book_type is not None:
+        filters.append(Book.type_ == book_type)
+
+    query = select(Book).where(*filters)
+    result = session.exec(query).all() # 执行查询并返回所有结果，结果是一个list
+    if not result:
+        raise HTTPException(status_code=404, detail="No books found matching the criteria")
+    return result
+
+
+
+@app.get("/search/{book_id}")
+def get_book_by_id(book_id: int, session: Session = Depends(get_db_session)) -> Book:
+    """
+    根据ID获取书籍
+    """
+    book = session.get(Book, book_id)
+    if book is None:
+        raise HTTPException(status_code=404, detail=f"Book with id {book_id} not found")
+    return book
+
 
 @app.delete("/delete/{book_id}")
-def delete_book(book_id: int):
+def delete_book(book_id: int, session: Session = Depends(get_db_session)) -> str:
     """
     删除书籍
     """
-    for book in books:
-        if book.id_ == book_id:
-            books.remove(book)
-            try:
-                saveBook(books)
-                return {"message": "Book deleted successfully"}
-            except Exception as e:
-                print(f"Error delete book: {e}")
-                raise HTTPException(status_code=500, detail="Error deleting book")
-    raise HTTPException(status_code=404, detail="Book not found")
+    book = session.get(Book, book_id)
+    if book is None:
+        raise HTTPException(status_code=404, detail=f"Book with id {book_id} not found")
+    session.delete(book)
+    session.commit()
+    return f"Book with id {book_id} deleted successfully"
+
+
 
 @app.put("/update/{book_id}")
-def update_book(book_id: int, book: BookInput) -> BookOutput:
+def update_book(book_id: int, book: BookInput, session: Session = Depends(get_book_by_id)) -> Book:
     """
     更新书籍
     """
-    for i, b in enumerate(books):
-        if b.id_ == book_id:
-            books[i] = BookOutput(
-                id_=book_id,
-                name=book.name,
-                isbn=book.isbn,
-                type_=book.type_,
-                publish=book.publish,
-                price=book.price
-            )
-            try:
-                saveBook(books)
-                return books[i]
-            except Exception as e:
-                print(f"Error updating book: {e}")
-                raise HTTPException(status_code=500, detail="Error updating book")
-    raise HTTPException(status_code=404, detail="Book not found")

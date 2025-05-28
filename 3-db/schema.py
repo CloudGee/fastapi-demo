@@ -8,7 +8,7 @@
 
 from sqlmodel import Field, SQLModel
 
-# SQLModel是一个基于Pydantic和SQLAlchemy的库，用于定义数据模型和数据库表，但并不直接是一个数据库表。
+# SQLModel是一个基于Pydantic和SQLAlchemy的库，用于定义数据模型和数据库表。
 class BookInput(SQLModel):
     name: str
     isbn: str
@@ -31,10 +31,6 @@ class BookInput(SQLModel):
 # table=True表示这个模型是一个数据库表
 class Book(BookInput, table=True):
     id_: int | None = Field(default=None, primary_key=True)  # id_ is the primary key, it is required
-
-class BookOutput(BookInput):
-    id_: int
-
     # 为api doc中每个api接口添加有意义的示例描述
     class Config:
         json_schema_extra = {
@@ -47,7 +43,6 @@ class BookOutput(BookInput):
                 "price": 99.99
             }
         }
-
 
 if __name__ == "__main__":
     book = Book(
