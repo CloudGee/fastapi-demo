@@ -1,7 +1,10 @@
-from fastapi import HTTPException, logger
+from fastapi import HTTPException
 from sqlmodel import create_engine, Session
 from sqlalchemy.exc import SQLAlchemyError
 from functools import wraps
+from logging import Logger
+
+logger = Logger(__name__)  # 创建一个日志记录器，__name__表示当前模块的名称
 
 engine = create_engine("sqlite:///books.db", echo=True, connect_args={"check_same_thread": False}) # SQLite数据库引擎，echo=True表示打印SQL语句，建议只在测试环境使用这个参数，connect_args={"check_same_thread": False}表示允许多线程访问
 def get_db_session():

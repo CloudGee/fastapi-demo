@@ -26,8 +26,6 @@ app.include_router(book.router)  # 将书籍相关的路由添加到FastAPI应�
 app.include_router(author.router)  # 将作者相关的路由添加到FastAPI应用中
 
 
-
-
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8008, reload=True)  # 启动FastAPI应用，reload=True表示代码修改后自动重启
 

@@ -69,3 +69,13 @@ if __name__ == "__main__":
 
     print(type(book.model_dump()))
     print(type(book.model_dump_json()))
+
+# model_dump() 方法
+# 来源: Pydantic BaseModel 的方法，后续的SQLModel 也继承了它
+# 作用: 把模型对象转成字典
+# 常用参数
+
+# include={'字段1', '字段2'} - 只要这些字段
+# exclude={'字段1', '字段2'} - 排除这些字段
+# exclude_none=True - 排除值为None的字段
+# exclude_unset=True - 排除没设置过的字段

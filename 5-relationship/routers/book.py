@@ -1,7 +1,10 @@
-from fastapi import HTTPException, Depends, APIRouter, logger
+from fastapi import HTTPException, Depends, APIRouter
 from sqlmodel import Session, select
-from schema import Book, BookWithAuthors, Author
+from schema import Book, BookInput, Author
 from db import get_db_session, db_exception_handler
+from logging import Logger
+
+logger = Logger(__name__)
 
 
 router = APIRouter(prefix="/api/book", tags=["Book"])
@@ -9,27 +12,28 @@ router = APIRouter(prefix="/api/book", tags=["Book"])
 # 增
 @router.post("/")
 @db_exception_handler
-def append_book(book_input: BookWithAuthors, session: Session = Depends(get_db_session)) -> Book:
+def append_book(book_input: BookInput, session: Session = Depends(get_db_session)) -> Book:
     """
     添加书籍
     """
     # 检查书籍是否已存在
     existing_book_stmt = select(Book).where(Book.name == book_input.name)
-    existing_book = session.exec(existing_book_stmt).scalar_one_or_none() # 期望返回单个结果或None，如果有多个结果会抛出异常
+    existing_book = session.exec(existing_book_stmt).first() # 注意：这里的first()方法会返回第一个匹配的结果，如果没有匹配的结果则返回None
+
 
     if existing_book:
         raise HTTPException(status_code=400, detail="Book already exists")
 
     # 查找或创建作者
-    author_stmt = select(Author).where(Author.name == book_input.author_name, Author.nationality == book_input.author_nationality)
-    existing_author = session.exec(author_stmt).scalar_one_or_none()
+    author_stmt = select(Author).where(Author.name == book_input.author, Author.nationality == book_input.author_nationality)
+    existing_author = session.exec(author_stmt).first()
 
     if existing_author:
         target_author = existing_author
         logger.info(f"Found existing author: {existing_author.name}")
     else:
         # 创建新作者
-        author_data = {"name": book_input.author_name}
+        author_data = {"name": book_input.author}
         if book_input.author_nationality:
             author_data["nationality"] = book_input.author_nationality
 
@@ -39,7 +43,7 @@ def append_book(book_input: BookWithAuthors, session: Session = Depends(get_db_s
         logger.info(f"Created new author: {target_author.name} with ID {target_author.id_}")
 
     # 创建新书籍
-    book_data = book_input.model_dump(exclude={"author_name", "author_nationality"})
+    book_data = book_input.model_dump(exclude={"author", "author_nationality"})
     book_data["author_id"] = target_author.id_
 
     new_book = Book(**book_data)
@@ -73,8 +77,6 @@ def get_books(book_id: int | None = None, book_type: str | None = None, session:
         raise HTTPException(status_code=404, detail="No books found")
     return result
 
-
-
 # 查，通过主键查询，使用session.get()方法更加高效
 @router.get("/{book_id}")
 @db_exception_handler
@@ -104,24 +106,24 @@ def delete_book(book_id: int, session: Session = Depends(get_db_session)) -> str
 
 
 @router.put("/{book_id}")
-def update_book(book_id: int, new_book: BookWithAuthors, session: Session = Depends(get_db_session)) -> Book:
+def update_book(book_id: int, new_book: BookInput, session: Session = Depends(get_db_session)) -> Book:
     """
     更新书籍
     """
     try:
         # 查找现有作者
         author_stmt = select(Author).where(
-            Author.name == new_book.author_name,
+            Author.name == new_book.author,
             Author.nationality == new_book.author_nationality
         )
-        existing_author = session.exec(author_stmt).scalar_one_or_none()
+        existing_author = session.exec(author_stmt).first()
 
         if existing_author:
             target_author = existing_author
         else:
             # 创建新作者 - 修复属性名
             author_data = {
-                "name": new_book.author_name,
+                "name": new_book.author,
                 "nationality": new_book.author_nationality  # 修复：使用正确的属性名
             }
             target_author = Author(**author_data)
@@ -136,7 +138,7 @@ def update_book(book_id: int, new_book: BookWithAuthors, session: Session = Depe
             raise HTTPException(status_code=404, detail=f"Book with id {book_id} not found")
 
         # 准备更新数据
-        new_book_data = new_book.model_dump(exclude={"author_name", "author_nationality"})
+        new_book_data = new_book.model_dump(exclude={"author", "author_nationality"})
         new_book_data["author_id"] = target_author.id_
 
         # 更新书籍属性

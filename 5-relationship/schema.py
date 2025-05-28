@@ -22,9 +22,21 @@ class BookBase(SQLModel):
             }
         }
 
-class BookWithAuthor(BookBase):
+class BookInput(BookBase):
     author: str
     author_nationality: str | None = None  # 可选字段
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Python",
+                "isbn": "978-7-121-30000-0",
+                "type_": "programming",
+                "publish": "2023-01-01",
+                "price": 99.99,
+                "author": "Guido van Rossum",
+                "author_nationality": "Dutch"
+            }
+        }
 
 class Book(BookBase, table=True):
     id_: int | None = Field(default=None, primary_key=True)
@@ -68,7 +80,7 @@ class Author(AuthorInput, table=True):
             }
         }
 
-class AuthorWithBooks(AuthorInput):
+class AuthorOutputWithBooks(AuthorInput):
     books: list[Book] = []
     class Config:
         json_schema_extra = {
