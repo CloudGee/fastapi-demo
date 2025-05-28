@@ -7,6 +7,8 @@ router = APIRouter(prefix="/api/author", tags=["Author"])
 # router 是一个APIRouter实例，用于组织和管理API路由，prefix="/api/author"表示所有路由都以/api/author开头，tags=["Author"]用于在API文档中分组。
 
 # 有了prefix可以省略掉前缀/api/author，直接使用router的路由方法定义API接口。
+# 可以在router中添加status_code参数来指定返回的HTTP状态码，默认是200 OK。也自定义返回如下：
+# @router.get("/", status_code=204)
 @router.get("/")
 @db_exception_handler
 def get_all_authors(session: Session = Depends(get_db_session)) -> list[Author]:
@@ -18,6 +20,8 @@ def get_all_authors(session: Session = Depends(get_db_session)) -> list[Author]:
     if not result:
         raise HTTPException(status_code=404, detail="No authors found")
     return result
+
+# 还有一种在函数体中变更response status code的方式： https://fastapi.tiangolo.com/advanced/response-change-status-code/
 
 @router.post("/")
 @db_exception_handler
@@ -71,6 +75,9 @@ def delete_author(author_id: int, session: Session = Depends(get_db_session)) ->
 @router.get("/{author_id}/books")
 @db_exception_handler
 def get_books_by_author(author_id: int, session: Session = Depends(get_db_session)) -> AuthorOutputWithBooks:
+# 也可以使用response model完成类似功能，而不添加AuthorOutputWithBooks类型的返回值，效果是一致的
+# @router.get("/{author_id}/books", response_model=AuthorOutputWithBooks)
+# def get_books_by_author(author_id: int, session: Session = Depends(get_db_session)):
     """
     根据作者ID获取该作者的所有书籍
     """

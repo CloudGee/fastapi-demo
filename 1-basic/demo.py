@@ -22,7 +22,7 @@ def get_items(
     """
     name 是查询参数（?name=xxx），类型为 Optional[str]。
     FastAPI 会自动从 URL 中解析并进行类型转换，转换为函数定义中指定的类型。
-    返回类型 list[dict]，FastAPI 自动校验是否符合。
+    返回类型 list[dict]，FastAPI 自动校验是否符合。Python语言本身默认不会校验返回值。
     """
     if name:
         return [item for item in items if item["name"] == name]
