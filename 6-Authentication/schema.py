@@ -1,7 +1,10 @@
 
 
 from sqlmodel import Field, SQLModel, Relationship
-
+# pip install "passlib[bcrypt]"
+# pass lib bcrypt is used to hash the password
+from passlib.context import CryptContext
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class BookBase(SQLModel):
     name: str
@@ -69,7 +72,7 @@ class AuthorInput(SQLModel):
 
 class Author(AuthorInput, table=True):
     id_: int | None = Field(default=None, primary_key=True)
-# 
+#
     books: list[Book] = Relationship(back_populates="author")
     class Config:
         json_schema_extra = {
@@ -97,5 +100,43 @@ class AuthorOutputWithBooks(AuthorInput):
                         "price": 99.99
                     }
                 ]
+            }
+        }
+
+# user class
+# it should be an sqlmodel class
+# it should have a username, password_hash and id as primary key
+class User(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    # index true means that the username will be indexed for faster search
+    # index is a performance optimization for searching in the database
+    username: str = Field(index=True, unique=True)
+    # optional: username: str = Field(sa_column=Column('username', VARCHAR, unique=True, index=True)), different way to define the same thing
+    password_hash: str
+    def set_password(self, password: str):
+        """Set the password hash using bcrypt."""
+        self.password_hash = pwd_context.hash(password)
+    def verify_password(self, password: str) -> bool:
+        """Verify the password against the stored hash."""
+        return pwd_context.verify(password, self.password_hash)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "username": "john_doe",
+                "password_hash": "hashed_password"
+            }
+        }
+
+class UserOutput(SQLModel):
+    id: int
+    username: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "username": "john_doe"
             }
         }

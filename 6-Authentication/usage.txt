@@ -1,0 +1,43 @@
+# ============ Key Points About the return Statement ============
+"""
+The return statement in get_current_user serves THREE CRITICAL purposes:
+
+1. DEPENDENCY INJECTION VALUE:
+   - The returned UserOutput object becomes the value of 'user' parameter
+   - Without return, 'user' would be None
+   - This is how FastAPI "injects" the authenticated user into route functions
+
+2. AUTHENTICATION SUCCESS SIGNAL:
+   - return = authentication succeeded, continue to route function
+   - raise HTTPException = authentication failed, stop execution
+   - FastAPI uses this to determine whether to proceed
+
+3. DATA TRANSFER MECHANISM:
+   - Passes user information from authentication layer to business logic layer
+   - Enables route functions to access current user details
+   - Allows for user-specific operations and logging
+
+Without the return statement:
+- Route function would receive None for user parameter
+- No way to access authenticated user information
+- Dependency injection would be meaningless
+"""
+
+# ============ Request Example ============
+"""
+Client request:
+curl -u username:password http://localhost:8000/books
+or with header:
+curl -H "Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=" http://localhost:8000/books
+
+Complete flow:
+1. Client sends request with Authorization: Basic xxx header
+2. FastAPI detects Depends(get_current_user) in route function
+3. Builds dependency tree: security -> get_db_session -> get_current_user
+4. Executes dependencies in order
+5. security extracts username/password from header
+6. get_current_user validates credentials against database
+7. If valid: returns user object -> injected into route function
+8. If invalid: raises 401 exception -> route function never executes
+9. Request completes: database connection automatically closed
+"""
