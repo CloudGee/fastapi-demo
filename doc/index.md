@@ -1,4 +1,4 @@
-# FastAPI 完整学习笔记：从基础到高级实践
+# FastAPI 完整学习笔记：从基础到高级实践 - CLAUDE AI
 
 ## 1. FastAPI 基础知识与环境配置
 
