@@ -25,67 +25,8 @@ pip install "fastapi[standard]"
 
 # 最小化安装
 pip install fastapi uvicorn
-
-# 启动开发服务器
-fastapi dev main.py
 ```
 
-### 1.3 开发容器配置
-
-在 `.devcontainer/devcontainer.json` 中配置开发环境：
-
-```json
-{
-    "name": "FastAPI Development",
-    "image": "python:3.11-slim",
-    "features": {
-        "ghcr.io/devcontainers/features/python:1": {}
-    },
-    "forwardPorts": [8000],
-    "postCreateCommand": "pip install fastapi[standard] uvicorn",
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "ms-python.python",
-                "ms-python.pylance"
-            ]
-        }
-    }
-}
-```
-
-### 1.4 Docker 容器化配置
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-EXPOSE 8000
-
-CMD ["fastapi", "run", "main.py", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-Docker Compose 配置示例：
-
-```yaml
-version: '3.8'
-services:
-  fastapi:
-    build: .
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
-    environment:
-      - ENV=development
-    command: fastapi dev main.py --host 0.0.0.0
-```
 
 ## 2. 路由系统：路径参数与查询参数
 
